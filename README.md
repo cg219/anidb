@@ -1,4 +1,4 @@
-# AniDB APU
+# AniDB API
 
 ## Setup
 - Copy .env.sample to create .env
