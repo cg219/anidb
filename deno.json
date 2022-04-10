@@ -1,0 +1,5 @@
+{
+    "tasks": {
+        "dev": "deno run --allow-net --allow-env=ANIDB_DB,ANIDB_URL,ANIDB_DBNAME,ANIDB_SECRET --allow-read=.env,.env.defaults --watch main.ts"
+    }
+}
