@@ -39,7 +39,8 @@ async function searchHandler(req: Request): Promise<Response> {
 
     if (auth?.startsWith('Bearer')) {
         const secret = auth?.replace('Bearer ', '');
-        const { url, name } = await req.json();
+        const { name } = await req.json();
+        const url = Deno.env.get('ANIDB_URL') || '';
         const dbname = Deno.env.get('ANIDB_DBNAME') || '';
         let data = await searchByName({ secret, url, dbname, name }) || [];
 
