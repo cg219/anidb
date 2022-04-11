@@ -10,7 +10,7 @@ async function load ({ db, dbname, secret, url }: LoadArgs) {
     const data = new Uint8Array(buffer);
 
     try {
-        if (!supabase) supabase = createClient(url, secret, { autoRefreshToken: false, persistSession: false, localStorage: Storage as any });
+        if (!supabase) supabase = createClient(url, secret, { autoRefreshToken: false, persistSession: false, localStorage: localStorage as any });
 
         const decompressedData = gzipDecode(data);
         const decoder = new TextDecoder();
@@ -50,6 +50,7 @@ async function searchByName({ dbname, url, secret, name }: SearchArgs) {
     }
 }
 
+console.log(localStorage, 'test')
 export {
     load,
     searchByName
