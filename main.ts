@@ -11,6 +11,7 @@ const errorOccured = new Response(new Blob([JSON.stringify(errorOccuredJson)], {
 interface SearchResults {
     title: string;
     ani_id: string;
+    type: string;
 }
 
 async function loadHandler(req: Request): Promise<Response> {
@@ -44,7 +45,7 @@ async function searchHandler(req: Request): Promise<Response> {
         const dbname = Deno.env.get('ANIDB_DBNAME') || '';
         let data = await searchByName({ secret, url, dbname, name }) || [];
 
-        data = data.map((t: SearchResults) => ({ title: t.title, id: t.ani_id }));
+        data = data.map((t: SearchResults) => ({ title: t.title, id: t.ani_id, type: t.type }));
 
         const response = { success: true, data };
 
