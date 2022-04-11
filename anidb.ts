@@ -51,7 +51,7 @@ async function searchByName({ dbname, url, secret, name }: SearchArgs) {
     }
 }
 
-// console.log(AsyncStorage, 'test')
+console.log(localStorage, 'test')
 export {
     load,
     searchByName
