@@ -1,6 +1,7 @@
 import { gzipDecode } from 'https://deno.land/x/wasm_gzip@v1.0.0/mod.ts';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 import { LoadArgs, SearchArgs } from './interfaces.ts';
+import './localStorage.ts';
 
 const encoder = new TextEncoder();
 let supabase: any;
@@ -10,7 +11,7 @@ async function load ({ db, dbname, secret, url }: LoadArgs) {
     const data = new Uint8Array(buffer);
 
     try {
-        if (!supabase) supabase = createClient(url, secret, { autoRefreshToken: false, persistSession: false, localStorage: localStorage as any });
+        if (!supabase) supabase = createClient(url, secret, { autoRefreshToken: false, persistSession: false });
 
         const decompressedData = gzipDecode(data);
         const decoder = new TextDecoder();
@@ -50,7 +51,7 @@ async function searchByName({ dbname, url, secret, name }: SearchArgs) {
     }
 }
 
-console.log(localStorage, 'test')
+// console.log(AsyncStorage, 'test')
 export {
     load,
     searchByName
