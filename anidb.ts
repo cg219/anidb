@@ -1,7 +1,7 @@
 import { gzipDecode } from 'https://deno.land/x/wasm_gzip@v1.0.0/mod.ts';
 import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 import { LoadArgs, SearchArgs } from './interfaces.ts';
-import './localStorage.ts';
+import './localstorage.ts';
 
 const encoder = new TextEncoder();
 let supabase: any;
