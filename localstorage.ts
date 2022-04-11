@@ -1,11 +1,11 @@
-import * as path from "https://deno.land/std@0.83.0/path/mod.ts";
+import { join } from "https://deno.land/std@0.134.0/path/mod.ts";
 
 
 const Try = (fn : any) => {try{return fn()}catch(e){return undefined}}
 
 const HOME = (Deno.env.get('HOME') as string)
 const NAMESPACE = Deno.env.get('LOCAL_STORAGE_NAMESPACE') || 'default'
-const PATH = Deno.env.get('LOCAL_STORAGE_PATH') || path.join(HOME, '.cache', 'deno', NAMESPACE)
+const PATH = Deno.env.get('LOCAL_STORAGE_PATH') || join(HOME, '.cache', 'deno', NAMESPACE)
 
 
 
