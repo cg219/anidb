@@ -1,13 +1,9 @@
 import { join } from "https://deno.land/std@0.134.0/path/mod.ts";
 
-
 const Try = (fn : any) => {try{return fn()}catch(e){return undefined}}
-
-const HOME = (Deno.env.get('HOME') as string)
-const NAMESPACE = Deno.env.get('LOCAL_STORAGE_NAMESPACE') || 'default'
-const PATH = Deno.env.get('LOCAL_STORAGE_PATH') || join(HOME, '.cache', 'deno', NAMESPACE)
-
-
+const HOME = (Deno.env.get('HOME') as string);
+const NAMESPACE = Deno.env.get('LOCAL_STORAGE_NAMESPACE') || 'default';
+const PATH = Deno.env.get('LOCAL_STORAGE_PATH') || join(HOME, '.cache', 'deno', NAMESPACE);
 
 type LocalStorageCustom = {
     getItem(key : string) : any;
@@ -20,17 +16,11 @@ type LocalStorageCustom = {
     [key : string] : any
 }
 
-
-
-
-
-
 /**lib */
 declare global {
     // interface Window { localStorage: LocalStorageCustom; }
     interface globalThis { localStorage : LocalStorageCustom}
 }
-
 
 let iface = {
     getItem(key : string){
@@ -71,7 +61,6 @@ let iface = {
     }
 };
 
-
 (async ()=>{
 
     if (!localStorage) {
@@ -86,10 +75,6 @@ let iface = {
                 return true
             }
         });
-
-
-
-
 
         window.localStorage = localStorageObj
     }
