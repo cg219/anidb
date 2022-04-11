@@ -63,7 +63,7 @@ let iface = {
 
 (async ()=>{
 
-    if (!localStorage) {
+    if (!window.localStorage) {
         let localStorageObj = new Proxy({}, {
             get(o : any, k : string){
                 if(['length', 'key', 'clear', 'removeItem', 'setItem', 'getItem', 'toObject'].includes(k))return (iface as any)[k]
