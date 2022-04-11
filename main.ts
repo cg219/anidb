@@ -68,4 +68,4 @@ await serve((req) => {
         default:
             return notFound;
     }
-}, { port: 3200 })
+})
