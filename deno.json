@@ -1,5 +1,6 @@
 {
     "tasks": {
-        "dev": "deno run --allow-net --allow-env=ANIDB_DB,ANIDB_URL,ANIDB_DBNAME,ANIDB_SECRET,LOCAL_STORAGE_PATH,LOCAL_STORAGE_NAMESPACE,HOME --allow-read=.env,.env.defaults --watch main.ts"
+        "dev-web": "deno run --allow-net --allow-env=ANIDB_DB,ANIDB_URL,ANIDB_DBNAME,ANIDB_SECRET,LOCAL_STORAGE_PATH,LOCAL_STORAGE_NAMESPACE,HOME --allow-read=.env,.env.defaults --watch web.ts",
+        "dev-cli": "deno run --allow-net --allow-env=ANIDB_DB,ANIDB_URL,ANIDB_DBNAME,ANIDB_SECRET,LOCAL_STORAGE_PATH,LOCAL_STORAGE_NAMESPACE,HOME --allow-read=.env,.env.defaults --watch cli.ts"
     }
 }

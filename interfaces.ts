@@ -15,3 +15,9 @@ export interface SearchArgs {
 export interface Defaults {
     [key: string]: string
 }
+
+export interface SearchResults {
+    title: string;
+    ani_id: string;
+    type: string;
+}

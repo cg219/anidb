@@ -1,5 +1,5 @@
 import { load, searchByName } from './anidb.ts';
-import { LoadArgs, SearchArgs } from './interfaces.ts';
+import { LoadArgs, SearchArgs, SearchResults } from './interfaces.ts';
 import { serve } from 'https://deno.land/std@0.134.0/http/server.ts';
 import "https://deno.land/x/dotenv@v3.2.0/load.ts";
 
@@ -7,12 +7,6 @@ const notFoundJson = { success: false, error: 'Not Found' };
 const errorOccuredJson = { success: false, error: 'Internal Error' };
 const notFound = new Response(new Blob([JSON.stringify(notFoundJson)], { type: 'application/json' }), { status: 404 });
 const errorOccured = new Response(new Blob([JSON.stringify(errorOccuredJson)], { type: 'application/json' }), { status: 500 });
-
-interface SearchResults {
-    title: string;
-    ani_id: string;
-    type: string;
-}
 
 async function loadHandler(req: Request): Promise<Response> {
     if (req.method != 'POST') return notFound;
