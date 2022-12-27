@@ -1,15 +1,12 @@
 export interface LoadArgs {
     db: string;
     dbname: string;
-    secret: string;
-    url: string;
 }
 
 export interface SearchArgs {
     dbname: string;
+    name: string;
     secret?: string;
-    url?: string;
-    name: string
 }
 
 export interface Defaults {
@@ -18,6 +15,6 @@ export interface Defaults {
 
 export interface SearchResults {
     title: string;
-    ani_id: string;
+    adbid: string;
     type: string;
 }

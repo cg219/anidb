@@ -1,7 +1,7 @@
 import { load, searchByName } from './anidb.ts';
-import { LoadArgs, SearchArgs, SearchResults } from './interfaces.ts';
-import { serve } from 'https://deno.land/std@0.134.0/http/server.ts';
-import "https://deno.land/x/dotenv@v3.2.0/load.ts";
+import { SearchResults } from './interfaces.ts';
+import { serve } from 'https://deno.land/std@0.170.0/http/server.ts';
+import { load as dotLoad } from "https://deno.land/std@0.170.0/dotenv/mod.ts";
 
 const notFoundJson = { success: false, error: 'Not Found' };
 const errorOccuredJson = { success: false, error: 'Internal Error' };
@@ -17,9 +17,8 @@ async function loadHandler(req: Request): Promise<Response> {
         const secret = auth?.replace('Bearer ', '');
         const db = Deno.env.get('ANIDB_DB') || '';
         const dbname = Deno.env.get('ANIDB_DBNAME') || '';
-        const url = Deno.env.get('ANIDB_URL') || '';
 
-        await load({ secret, url, db, dbname });
+        await load({ db, dbname });
 
         return new Response('200', { status: 200 })
     }
@@ -35,11 +34,10 @@ async function searchHandler(req: Request): Promise<Response> {
     if (auth?.startsWith('Bearer')) {
         const secret = auth?.replace('Bearer ', '');
         const { name } = await req.json();
-        const url = Deno.env.get('ANIDB_URL') || '';
         const dbname = Deno.env.get('ANIDB_DBNAME') || '';
-        let data = await searchByName({ secret, url, dbname, name }) || [];
+        let data = await searchByName({ dbname, name }) || [];
 
-        data = data.map((t: SearchResults) => ({ title: t.title, id: t.ani_id, type: t.type }));
+        data = data.map((t: SearchResults) => ({ title: t.title, id: t.adbid, type: t.type }));
 
         const response = { success: true, data };
 
@@ -49,17 +47,21 @@ async function searchHandler(req: Request): Promise<Response> {
     return errorOccured;
 }
 
-await serve((req) => {
-    switch (new URL(req.url).pathname) {
-        case '/load':
-            return loadHandler(req);
-            break;
+if (import.meta.main) {
+    await dotLoad({ export: true });
+    await serve((req: Request) => {
+        switch (new URL(req.url).pathname) {
+            case '/load': {
+                return loadHandler(req);
+            }
 
-        case '/search':
-            return searchHandler(req);
-            break;
+            case '/search': {
+                return searchHandler(req);
+            }
 
-        default:
-            return notFound;
-    }
-}, { port: 3200 })
+            default: {
+                return notFound;
+            }
+        }
+    }, { port: 3200 })
+}
