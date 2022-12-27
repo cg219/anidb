@@ -10,4 +10,4 @@ ENV PGSSLMODE=verify-ca
 ENV PGSSLCERT=PATH TO POSTGRES CERT
 ENV ANIDB_DB=http://anidb.net/api/anime-titles.dat.gz
 ENV ANIDB_DBNAME=DATABASE TABLE
-CMD ["deno", "run", "-A", "schedule.ts"]
+ENTRYPOINT ["deno", "run", "-A", "cli.ts"]

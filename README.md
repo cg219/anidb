@@ -10,7 +10,7 @@
 - Replace the ENV variables for your setup
 - Run `docker build -t anidb-scheduler:1 -f Dockerfile.schedule .` to build
 
-<!-- ## Build Docker Image for cli
-- Copy `Dockerfile.schedule.sample` to `Dockerfile.schedule`
+## Build Docker Image for cli
+- Copy `Dockerfile.cli.sample` to `Dockerfile.cli`
 - Replace the ENV variables for your setup
-- Run `docker build -t anidb-cli:1 -f Dockerfile.schedule .` to build -->
+- Run `docker build -t anidb-cli:1 -f Dockerfile.cli .` to build
