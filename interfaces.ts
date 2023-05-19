@@ -1,5 +1,6 @@
 export interface LoadArgs {
     db: string;
+    longRunning: boolean;
 }
 
 export interface SearchArgs {

@@ -22,8 +22,10 @@ async function loadHandler(req: Request): Promise<Response> {
     if (auth?.startsWith('Bearer')) {
         const secret = auth?.replace('Bearer ', '');
         const db = Deno.env.get('ANIDB_DB') || '';
+        const params = new URLSearchParams(new URL(req.url as string).search);
+        const longRunning = params.get('longRunning')?.toLowerCase() == 'true' ? true : false;
 
-        await load({ db });
+        await load({ db, longRunning });
 
         return new Response('200', { status: 200 })
     }

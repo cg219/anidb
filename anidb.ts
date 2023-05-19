@@ -6,7 +6,7 @@ import { chunk } from "https://deno.land/std@0.187.0/collections/chunk.ts";
 
 const kv = await Deno.openKv();
 
-async function load ({ db }: LoadArgs) {
+async function load ({ db, longRunning = false }: LoadArgs) {
     const buffer = await fetch(new URL(db)).then((res) => res.arrayBuffer());
     const data = new Uint8Array(buffer);
 
@@ -32,26 +32,28 @@ async function load ({ db }: LoadArgs) {
                 return { adbid: Number(adbid), type: Number(type), lang, title, titleKey, fragments };
             });
 
-        for (const { titleKey, fragments, ...anime } of arr) {
-            const chunks = chunk(fragments, 9);
+        if (longRunning) {
+            for (const { titleKey, fragments, ...anime } of arr) {
+                const chunks = chunk(fragments, 9);
 
-            chunks.forEach((c: string[]) => {
+                chunks.forEach((c: string[]) => {
+                    const atomic = kv.atomic();
+                    c.forEach((f) => {
+                        atomic.set(['titleByFragment', f.toLowerCase(), titleKey[1]], anime);
+                    });
+                    atomic.commit();
+                    inserts.push(atomic);
+                })
+
                 const atomic = kv.atomic();
-                c.forEach((f) => {
-                    atomic.set(['titleByFragment', f.toLowerCase(), titleKey[1]], anime);
-                });
+                atomic.set(titleKey, anime);
                 atomic.commit();
+
                 inserts.push(atomic);
-            })
+            }
 
-            const atomic = kv.atomic();
-            atomic.set(titleKey, anime);
-            atomic.commit();
-
-            inserts.push(atomic);
+            await Promise.allSettled(inserts);
         }
-
-        await Promise.allSettled(inserts);
     } catch(e) {
         console.log(e);
         return e;
