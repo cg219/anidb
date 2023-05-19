@@ -4,7 +4,7 @@ import { gzipDecode } from 'https://deno.land/x/wasm_gzip@v1.0.0/mod.ts';
 import { LoadArgs, SearchArgs, SearchResults } from './interfaces.ts';
 import { chunk } from "https://deno.land/std@0.187.0/collections/chunk.ts";
 
-const kv = await Deno.openKv('test');
+const kv = await Deno.openKv();
 
 async function load ({ db }: LoadArgs) {
     const buffer = await fetch(new URL(db)).then((res) => res.arrayBuffer());
