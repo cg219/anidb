@@ -1,70 +1,73 @@
-import { gzipDecode } from 'https://deno.land/x/wasm_gzip@v1.0.0/mod.ts';
-import { LoadArgs, SearchArgs } from './interfaces.ts';
-import { Client } from "https://deno.land/x/postgres@v0.17.0/mod.ts";
+/// <reference lib="deno.unstable" />
 
-async function load ({ db, dbname }: LoadArgs) {
+import { gzipDecode } from 'https://deno.land/x/wasm_gzip@v1.0.0/mod.ts';
+import { LoadArgs, SearchArgs, SearchResults } from './interfaces.ts';
+import { chunk } from "https://deno.land/std@0.187.0/collections/chunk.ts";
+
+const kv = await Deno.openKv('test');
+
+async function load ({ db }: LoadArgs) {
     const buffer = await fetch(new URL(db)).then((res) => res.arrayBuffer());
     const data = new Uint8Array(buffer);
-    const client = new Client({
-        tls: {
-            caCertificates: [ await Deno.readTextFile(Deno.env.get('PGSSLCERT')!)],
-            enabled: true
-        }
-    })
 
     try {
-        const dropTable = `DROP TABLE IF EXISTS ${dbname};`;
-        const createTable = `CREATE TABLE ${dbname}
-                (id SERIAL PRIMARY KEY,
-                adbid INT NOT NULL,
-                type SMALLINT,
-                lang VARCHAR(50),
-                title TEXT NOT NULL);`;
-        const alterTable = `ALTER TABLE ${dbname} ADD COLUMN ts tsvector GENERATED ALWAYS AS (to_tsvector('english', title)) STORED;`;
-        const createIndex = `CREATE INDEX ts_idx ON ${dbname} USING GIN (ts);`;
-        const insertData = `INSERT INTO ${dbname}(adbid, type, lang, title) VALUES($ADBID, $TYPE, $LANG, $TITLE)`;
         const decompressedData = gzipDecode(data);
         const titlesData = new TextDecoder().decode(decompressedData);
         const inserts = [];
         const arr = titlesData.split('\n')
             .slice(3)
+            .filter((entry) => {
+                const [adbid, type, lang, title] = entry.split('|');
+
+                if (title) return true;
+            })
             .map((entry) => {
                 const [adbid, type, lang, title] = entry.split('|');
-                return { adbid: Number(adbid), type: Number(type), lang, title };
+                const fragments = title.split('').reduce((acc: string[], cur: string) => {
+                    acc.push(`${acc.at(-1) ?? ''}${cur}`);
+                    return acc;
+                }, []);
+                const titleKey = ['title', title.toLowerCase()];
+
+                return { adbid: Number(adbid), type: Number(type), lang, title, titleKey, fragments };
             });
 
-        await client.connect();
-        await client.queryArray(dropTable);
-        await client.queryArray(createTable);
-        await client.queryArray(alterTable);
-        await client.queryArray(createIndex);
+        for (const { titleKey, fragments, ...anime } of arr) {
+            const chunks = chunk(fragments, 9);
 
-        for (const { adbid, title, lang, type } of arr) {
-            inserts.push(client.queryArray(insertData, { adbid, title, lang, type }));
+            chunks.forEach((c: string[]) => {
+                const atomic = kv.atomic();
+                c.forEach((f) => {
+                    atomic.set(['titleByFragment', f.toLowerCase(), titleKey[1]], anime);
+                });
+                atomic.commit();
+                inserts.push(atomic);
+            })
+
+            const atomic = kv.atomic();
+            atomic.set(titleKey, anime);
+            atomic.commit();
+
+            inserts.push(atomic);
         }
 
         await Promise.allSettled(inserts);
-        await client.end();
     } catch(e) {
         console.log(e);
         return e;
     }
 }
 
-async function searchByName({ name, dbname }: SearchArgs) {
-    const query = `SELECT title, adbid, type FROM ${dbname} WHERE ts @@ to_tsquery('english', '${name.split(' ').join(' & ')}');`;
-    const client = new Client({
-        tls: {
-            caCertificates: [ await Deno.readTextFile(Deno.env.get('PGSSLCERT')!)],
-            enabled: true
-        }
-    })
-
+async function searchByName({ name }: SearchArgs) {
     try {
-        await client.connect();
-        const data = await client.queryObject(query);
-        await client.end();
-        return data.rows;
+        const results = await kv.list<SearchResults>({ prefix: ['titleByFragment', name] });
+        const rows = [];
+
+        for await (const res of results) {
+            rows.push(res.value);
+        }
+
+        return rows;
     } catch (e) {
         console.log(e);
         return e;

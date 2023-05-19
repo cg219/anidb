@@ -5,7 +5,7 @@ if (import.meta.main) {
     console.log('Scheduler Started')
     const _scheduler = new Cron("15 1 * * *", { timezone: 'America/New_York'}, async () => {
         console.log('Loading updated DB');
-        await load({ db: Deno.env.get('ANIDB_DB')!, dbname: Deno.env.get('ANIDB_DBNAME')! });
+        await load({ db: Deno.env.get('ANIDB_DB')! });
         console.log('DB updated');
     });
 }

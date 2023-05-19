@@ -1,10 +1,8 @@
 export interface LoadArgs {
     db: string;
-    dbname: string;
 }
 
 export interface SearchArgs {
-    dbname: string;
     name: string;
     secret?: string;
 }

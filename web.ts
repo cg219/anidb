@@ -1,7 +1,7 @@
 import { load, searchByName } from './anidb.ts';
 import { SearchResults } from './interfaces.ts';
-import { serve } from 'https://deno.land/std@0.170.0/http/server.ts';
-import { load as dotLoad } from "https://deno.land/std@0.170.0/dotenv/mod.ts";
+import { serve } from 'https://deno.land/std@0.187.0/http/server.ts';
+import { load as dotLoad } from "https://deno.land/std@0.187.0/dotenv/mod.ts";
 
 const notFoundJson = { success: false, error: 'Not Found' };
 const errorOccuredJson = { success: false, error: 'Internal Error' };
@@ -16,9 +16,8 @@ async function loadHandler(req: Request): Promise<Response> {
     if (auth?.startsWith('Bearer')) {
         const secret = auth?.replace('Bearer ', '');
         const db = Deno.env.get('ANIDB_DB') || '';
-        const dbname = Deno.env.get('ANIDB_DBNAME') || '';
 
-        await load({ db, dbname });
+        await load({ db });
 
         return new Response('200', { status: 200 })
     }
@@ -34,8 +33,7 @@ async function searchHandler(req: Request): Promise<Response> {
     if (auth?.startsWith('Bearer')) {
         const secret = auth?.replace('Bearer ', '');
         const { name } = await req.json();
-        const dbname = Deno.env.get('ANIDB_DBNAME') || '';
-        let data = await searchByName({ dbname, name }) || [];
+        let data = await searchByName({ name }) || [];
 
         data = data.map((t: SearchResults) => ({ title: t.title, id: t.adbid, type: t.type }));
 
