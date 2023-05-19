@@ -1,26 +1,24 @@
 /// <reference lib="deno.unstable" />
 
 import { gzipDecode } from 'https://deno.land/x/wasm_gzip@v1.0.0/mod.ts';
-import { LoadArgs, SearchArgs, SearchResults } from './interfaces.ts';
+import { LoadArgs, Operation, SearchArgs, SearchResults } from './interfaces.ts';
 import { chunk } from "https://deno.land/std@0.187.0/collections/chunk.ts";
 
 const kv = await Deno.openKv();
 
-async function load ({ db, longRunning = false }: LoadArgs) {
+async function load ({ db, longRunning = false }: LoadArgs): Promise<Operation[]> {
     const buffer = await fetch(new URL(db)).then((res) => res.arrayBuffer());
     const data = new Uint8Array(buffer);
 
     try {
         const decompressedData = gzipDecode(data);
         const titlesData = new TextDecoder().decode(decompressedData);
-        const inserts = [];
-        const arr = titlesData.split('\n')
-            .slice(3)
-            .filter((entry) => {
-                const [adbid, type, lang, title] = entry.split('|');
+        const transactions: Deno.AtomicOperation[] = [];
+        const saveOperations: Operation[] = [];
 
-                if (title) return true;
-            })
+        titlesData.split('\n')
+            .slice(3)
+            .filter((entry) => entry.split('|').at(3) ? true : false) // Filter out entries without titles
             .map((entry) => {
                 const [adbid, type, lang, title] = entry.split('|');
                 const fragments = title.split('').reduce((acc: string[], cur: string) => {
@@ -28,31 +26,38 @@ async function load ({ db, longRunning = false }: LoadArgs) {
                     return acc;
                 }, []);
                 const titleKey = ['title', title.toLowerCase()];
+                const anime = { adbid: Number(adbid), type: Number(type), lang, title };
+                const chunks = chunk(fragments, 9);
 
-                return { adbid: Number(adbid), type: Number(type), lang, title, titleKey, fragments };
+                if (longRunning) {
+                    chunks.forEach((c: string[]) => {
+                        const atomic = kv.atomic();
+                        c.forEach((f) => {
+                            atomic.set(['titleByFragment', f.toLowerCase(), titleKey[1]], anime);
+                        });
+                        atomic.commit();
+                        transactions.push(atomic);
+                    })
+
+                    const atomic = kv.atomic();
+                    atomic.set(titleKey, anime);
+                    atomic.commit();
+
+                    transactions.push(atomic);
+                } else {
+                    saveOperations.push({
+                        fragments: chunks,
+                        title: titleKey,
+                        data: anime
+                    })
+                }
             });
 
         if (longRunning) {
-            for (const { titleKey, fragments, ...anime } of arr) {
-                const chunks = chunk(fragments, 9);
-
-                chunks.forEach((c: string[]) => {
-                    const atomic = kv.atomic();
-                    c.forEach((f) => {
-                        atomic.set(['titleByFragment', f.toLowerCase(), titleKey[1]], anime);
-                    });
-                    atomic.commit();
-                    inserts.push(atomic);
-                })
-
-                const atomic = kv.atomic();
-                atomic.set(titleKey, anime);
-                atomic.commit();
-
-                inserts.push(atomic);
-            }
-
-            await Promise.allSettled(inserts);
+            await Promise.allSettled(transactions);
+            return [];
+        } else {
+            return saveOperations;
         }
     } catch(e) {
         console.log(e);

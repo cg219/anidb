@@ -17,3 +17,16 @@ export interface SearchResults {
     adbid: string;
     type: string;
 }
+
+export interface Anime {
+    title: string;
+    adbid: number;
+    type: number;
+    lang: string;
+}
+
+export interface Operation {
+    fragments: string[][];
+    title: string[];
+    data: Anime
+}

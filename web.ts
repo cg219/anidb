@@ -24,10 +24,10 @@ async function loadHandler(req: Request): Promise<Response> {
         const db = Deno.env.get('ANIDB_DB') || '';
         const params = new URLSearchParams(new URL(req.url as string).search);
         const longRunning = params.get('longRunning')?.toLowerCase() == 'true' ? true : false;
+        const data = await load({ db, longRunning });
+        const response = { success: true, data };
 
-        await load({ db, longRunning });
-
-        return new Response('200', { status: 200 })
+        return new Response(new Blob([JSON.stringify(response)], { type: 'application/json' }), { status: 200 })
     }
 
     return errorOccured();
