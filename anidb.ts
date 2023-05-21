@@ -57,7 +57,33 @@ async function load ({ db, longRunning = false }: LoadArgs): Promise<Operation[]
             await Promise.allSettled(transactions);
             return [];
         } else {
-            return saveOperations;
+            chunk(saveOperations, 50).reduce(async (prev, cur) => {
+                await prev;
+
+                const promises: Deno.AtomicOperation[] = [];
+
+                cur.forEach((op) => {
+                    op.fragments.forEach((fragments) => {
+                        const atomic = kv.atomic();
+
+                        fragments.forEach((f) => {
+                            atomic.set(['titleByFragment', f.toLowerCase(), op.title[1]], op.data);
+                        })
+
+                        atomic.commit();
+                        promises.push(atomic);
+                    })
+
+                    const atomic = kv.atomic();
+                    atomic.set(op.title, op.data);
+                    atomic.commit();
+
+                    promises.push(atomic);
+                })
+
+                return Promise.allSettled(promises);
+            }, {})
+            return [];
         }
     } catch(e) {
         console.log(e);
