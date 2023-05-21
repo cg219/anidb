@@ -6,20 +6,22 @@ import { chunk } from "https://deno.land/std@0.187.0/collections/chunk.ts";
 
 const kv = await Deno.openKv();
 
-async function load ({ db, longRunning = false }: LoadArgs): Promise<Operation[]> {
+async function load ({ db }: LoadArgs) {
     const buffer = await fetch(new URL(db)).then((res) => res.arrayBuffer());
     const data = new Uint8Array(buffer);
 
     try {
-        const decompressedData = gzipDecode(data);
-        const titlesData = new TextDecoder().decode(decompressedData);
-        const transactions: Deno.AtomicOperation[] = [];
-        const saveOperations: Operation[] = [];
+        let decompressedData = gzipDecode(data);
+        let titlesData = new TextDecoder().decode(decompressedData);
 
         titlesData.split('\n')
             .slice(3)
             .filter((entry) => entry.split('|').at(3) ? true : false) // Filter out entries without titles
-            .map((entry) => {
+            .reduce(async (prev, entry) => {
+                await prev;
+
+                // console.log(Deno.memoryUsage().rss);
+
                 const [adbid, type, lang, title] = entry.split('|');
                 const fragments = title.split('').reduce((acc: string[], cur: string) => {
                     acc.push(`${acc.at(-1) ?? ''}${cur}`);
@@ -28,63 +30,22 @@ async function load ({ db, longRunning = false }: LoadArgs): Promise<Operation[]
                 const titleKey = ['title', title.toLowerCase()];
                 const anime = { adbid: Number(adbid), type: Number(type), lang, title };
                 const chunks = chunk(fragments, 9);
+                const transactions: Promise<Deno.KvCommitResult | Deno.KvCommitError>[] = [];
 
-                if (longRunning) {
-                    chunks.forEach((c: string[]) => {
-                        const atomic = kv.atomic();
-                        c.forEach((f) => {
-                            atomic.set(['titleByFragment', f.toLowerCase(), titleKey[1]], anime);
-                        });
-                        atomic.commit();
-                        transactions.push(atomic);
-                    })
-
+                chunks.forEach((c: string[]) => {
                     const atomic = kv.atomic();
-                    atomic.set(titleKey, anime);
-                    atomic.commit();
-
-                    transactions.push(atomic);
-                } else {
-                    saveOperations.push({
-                        fragments: chunks,
-                        title: titleKey,
-                        data: anime
-                    })
-                }
-            });
-
-        if (longRunning) {
-            await Promise.allSettled(transactions);
-            return [];
-        } else {
-            chunk(saveOperations, 50).reduce(async (prev, cur) => {
-                await prev;
-
-                const promises: Deno.AtomicOperation[] = [];
-
-                cur.forEach((op) => {
-                    op.fragments.forEach((fragments) => {
-                        const atomic = kv.atomic();
-
-                        fragments.forEach((f) => {
-                            atomic.set(['titleByFragment', f.toLowerCase(), op.title[1]], op.data);
-                        })
-
-                        atomic.commit();
-                        promises.push(atomic);
-                    })
-
-                    const atomic = kv.atomic();
-                    atomic.set(op.title, op.data);
-                    atomic.commit();
-
-                    promises.push(atomic);
+                    c.forEach((f) => {
+                        atomic.set(['titleByFragment', f.toLowerCase(), titleKey[1]], anime);
+                    });
+                    transactions.push(atomic.commit());
                 })
 
-                return Promise.allSettled(promises);
-            }, {})
-            return [];
-        }
+                const atomic = kv.atomic();
+                atomic.set(titleKey, anime);
+                transactions.push(atomic.commit());
+
+                return Promise.allSettled(transactions);
+            }, {});
     } catch(e) {
         console.log(e);
         return e;
