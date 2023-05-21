@@ -11,16 +11,14 @@ async function load ({ db }: LoadArgs) {
     const data = new Uint8Array(buffer);
 
     try {
-        let decompressedData = gzipDecode(data);
-        let titlesData = new TextDecoder().decode(decompressedData);
+        const decompressedData = gzipDecode(data);
+        const titlesData = new TextDecoder().decode(decompressedData);
 
         titlesData.split('\n')
             .slice(3)
             .filter((entry) => entry.split('|').at(3) ? true : false) // Filter out entries without titles
             .reduce(async (prev, entry) => {
                 await prev;
-
-                // console.log(Deno.memoryUsage().rss);
 
                 const [adbid, type, lang, title] = entry.split('|');
                 const fragments = title.split('').reduce((acc: string[], cur: string) => {
